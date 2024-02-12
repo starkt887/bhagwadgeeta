@@ -1,0 +1,7 @@
+{
+  "name": "bhagwadgeeta",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}
