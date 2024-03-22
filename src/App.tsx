@@ -1,42 +1,50 @@
-import { Redirect, Route } from 'react-router-dom';
-import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
+import { Redirect, Route, Switch } from 'react-router-dom';
+import { IonApp, IonFab, IonFabButton, IonIcon, IonLoading, IonNav, IonRouterOutlet } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import Home from './pages/Home';
+import AppTabs from './router/AppTabs';
+import { AuthContext, AuthProvider, useAuthInit } from './util/auth';
+import Login from './pages/Login';
+import { useEffect, useState } from 'react';
+import { add as addIcon } from 'ionicons/icons';
+import { useGitaChapters } from './services/gitaService';
 
-/* Core CSS required for Ionic components to work properly */
-import '@ionic/react/css/core.css';
 
-/* Basic CSS for apps built with Ionic */
-import '@ionic/react/css/normalize.css';
-import '@ionic/react/css/structure.css';
-import '@ionic/react/css/typography.css';
 
-/* Optional CSS utils that can be commented out */
-import '@ionic/react/css/padding.css';
-import '@ionic/react/css/float-elements.css';
-import '@ionic/react/css/text-alignment.css';
-import '@ionic/react/css/text-transformation.css';
-import '@ionic/react/css/flex-utils.css';
-import '@ionic/react/css/display.css';
+const App: React.FC = () => {
 
-/* Theme variables */
-import './theme/variables.css';
 
-setupIonicReact();
+  const { loading, isloggedin, userid } = useAuthInit();
 
-const App: React.FC = () => (
-  <IonApp>
-    <IonReactRouter>
-      <IonRouterOutlet>
-        <Route exact path="/home">
-          <Home />
-        </Route>
-        <Route exact path="/">
-          <Redirect to="/home" />
-        </Route>
-      </IonRouterOutlet>
-    </IonReactRouter>
-  </IonApp>
-);
+  if (loading) {
+    return <IonLoading isOpen={loading} />
+  }
+
+
+
+
+  return (
+    <IonApp>
+      <AuthProvider value={{ isloggedin, userid, loading }}>
+        <IonReactRouter>
+          <Switch>
+            {isloggedin ?
+              <Route path="/">
+                <AppTabs />
+              </Route> :
+              <>
+                <Route exact path="/login">
+                  <Login />
+                </Route>
+                <Redirect to="/login" />
+              </>}
+
+          </Switch>
+
+        </IonReactRouter>
+      </AuthProvider>
+    </IonApp>
+  );
+}
 
 export default App;
