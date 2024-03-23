@@ -1,47 +1,58 @@
 import { Redirect, Route, Switch } from 'react-router-dom';
-import { IonApp, IonFab, IonFabButton, IonIcon, IonLoading, IonNav, IonRouterOutlet } from '@ionic/react';
+import { IonApp, IonLoading, } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import Home from './pages/Home';
+
 import AppTabs from './router/AppTabs';
-import { AuthContext, AuthProvider, useAuthInit } from './util/auth';
+import { AuthProvider, useAuthInit } from './util/auth';
 import Login from './pages/Login';
-import { useEffect, useState } from 'react';
-import { add as addIcon } from 'ionicons/icons';
-import { useGitaChapters } from './services/gitaService';
+import { useState } from 'react';
+
+import { useLangauge } from './services/settingService';
 
 
 
 const App: React.FC = () => {
 
 
-  const { loading, isloggedin, userid } = useAuthInit();
+  const { loading, isloggedin, userid, language } = useAuthInit();
+  const { changeLanguage } = useLangauge()
+  const [lang, setLang] = useState(language)
 
   if (loading) {
     return <IonLoading isOpen={loading} />
   }
 
+  const updateLanguage = (lang: string) => {
+    // console.log("langauge:", lang)
+    changeLanguage(lang, userid!)
+    setLang(lang)
+  }
 
 
 
   return (
     <IonApp>
-      <AuthProvider value={{ isloggedin, userid, loading }}>
+      <AuthProvider value={{ isloggedin, userid, language: lang, updateLanguage, }}>
+
         <IonReactRouter>
           <Switch>
-            {isloggedin ?
-              <Route path="/">
-                <AppTabs />
-              </Route> :
-              <>
-                <Route exact path="/login">
-                  <Login />
-                </Route>
-                <Redirect to="/login" />
-              </>}
 
+            <Route exact path="/login">
+              {isloggedin && <Redirect to='/home' />}
+              <Login />
+            </Route>
+            <Route exact path="/login/:route">
+              {isloggedin && <Redirect to='/home' />}
+              <Login />
+            </Route>
+
+            <Route path="/">
+              <AppTabs />
+            </Route>
           </Switch>
 
         </IonReactRouter>
+
       </AuthProvider>
     </IonApp>
   );

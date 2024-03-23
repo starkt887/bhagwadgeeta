@@ -1,7 +1,7 @@
 import { QueryDocumentSnapshot } from "firebase/firestore";
 
 export interface IShlokmodel {
-    cloud_id:string,
+    cloud_id: string;
     id: number;
     verse_number: number;
     chapter_number: number;
@@ -23,4 +23,23 @@ export interface IGitamodel {
     name_english: string;
     chapter_summary_english: string;
     chapter_summary_hindi: string;
+}
+
+
+export interface IUsableShlokmodel {
+    cloud_id: string,
+    id: number;
+    verse_number: number;
+    chapter_number: number;
+    slug: string;
+    text: string;
+    description: string;
+}
+export interface IUsableGitamodel {
+    id: string;
+    name: string;
+    slug: string;
+    verses_count: number;
+    chapter_number: number;
+    chapter_summary: string;
 }

@@ -3,11 +3,15 @@ import React from 'react'
 import Header from '../components/Header'
 import { signOut } from 'firebase/auth'
 import { auth } from '../services/firebaseService'
+import { useAuthContext } from '../util/auth'
+import { useHistory } from 'react-router'
+import { useLangauge } from '../services/settingService'
 
 
 const Settings = () => {
 
-
+    const { isloggedin, userid, updateLanguage } = useAuthContext()
+    const history = useHistory()
     const logout = () => {
         signOut(auth).then(() => {
             // Sign-out successful.
@@ -19,7 +23,14 @@ const Settings = () => {
     }
 
     const selectLanguage = (detail: any) => {
+        if (!isloggedin && !userid) {
+            history.replace('/login/settings')
+            return
+
+        }
         console.log(detail.data.action)
+        updateLanguage!(detail.data.action)
+
     }
 
 
@@ -89,9 +100,12 @@ const Settings = () => {
                     ]}
                     onDidDismiss={({ detail }) => selectLanguage(detail)}
                 ></IonActionSheet>
-                <IonButton expand='full' color="danger" onClick={logout}>
-                    Logout
-                </IonButton>
+
+                {isloggedin &&
+                    <IonButton expand='full' color="danger" onClick={logout}>
+                        Logout
+                    </IonButton>}
+
             </IonContent>
         </IonPage>
     )

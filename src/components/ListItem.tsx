@@ -19,7 +19,6 @@ const ListItem = ({ id, title, shortdescription, path }: item) => {
             <IonText style={{
                 minWidth: "30px",
                 textAign: 'center',
-                background: '#ff9900',
                 padding: '3px 10px',
                 margin: '0px 10px 0px 0px',
                 borderRadius: "10px",

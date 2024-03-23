@@ -1,4 +1,4 @@
-import { IonCol, IonContent, IonGrid, IonHeader, IonItem, IonLabel, IonList, IonPage, IonProgressBar, IonRow, IonSpinner, IonText, IonTitle, IonToolbar } from '@ionic/react'
+import { IonCol, IonContent, IonGrid, IonHeader, IonItem, IonLabel, IonList, IonLoading, IonPage, IonProgressBar, IonRow, IonSpinner, IonText, IonTitle, IonToolbar } from '@ionic/react'
 import React, { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
@@ -9,23 +9,33 @@ import { useAuthContext } from '../util/auth';
 
 type tempChapterProgress = {
   chapter_number: number,
-  name_english: string,
+  name: string,
   progress: number,
   verses_count: number
 }
 
 const Progress = () => {
 
-  const { isloggedin, userid } = useAuthContext()
-  const { Chapters } = useGitaChapters();
+  const { userid, language } = useAuthContext()
+  const { Chapters, getAllChapters } = useGitaChapters();
   const { getProgress } = useGitaShloksSingle();
   const [chaptersWProgress, setChaptersWProgress] = useState<tempChapterProgress[]>([])
   const [globalProgress, setGlobalProgress] = useState<number>(0)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     chapterProgress()
-
   }, [Chapters])
+
+  useEffect(() => {
+    async function loadAllChapters() {
+      setLoading(true)
+      await getAllChapters(language!)
+      setLoading(false)
+    }
+    loadAllChapters()
+
+  }, [])
 
 
   const chapterProgress = async () => {
@@ -33,7 +43,7 @@ const Progress = () => {
     let tempChapwProgress: tempChapterProgress[] = []
     let totalShloks = 0;
     let completedShloks = 0
-   
+
     if (Chapters) {
       await Promise.all(Chapters.map(async (chapter) => {
         let count = await getProgress(userid!, chapter.chapter_number!)
@@ -41,7 +51,7 @@ const Progress = () => {
         completedShloks += count;
         tempChapwProgress.push({
           chapter_number: chapter.chapter_number,
-          name_english: chapter.name_english,
+          name: chapter.name,
           progress: count,
           verses_count: chapter.verses_count
         })
@@ -58,6 +68,8 @@ const Progress = () => {
   return (
     <IonPage>
       <Header title='Progress' />
+
+      <IonLoading isOpen={loading} />
       <IonContent fullscreen className='ion-padding'>
         <div style={{ display: "flex", justifyContent: "center", width: "100%", height: 200 }}>
           <CircularProgressbar value={globalProgress} text={`${Math.round(globalProgress)}%`} strokeWidth={10} styles={buildStyles({
@@ -97,7 +109,7 @@ const Progress = () => {
                   <IonRow class='ion-justify-content-between' >
                     <IonCol class='ion-text-start'>
                       <IonText>
-                        <h3>{chapter.name_english}</h3>
+                        <h3>{chapter.name}</h3>
                       </IonText>
                     </IonCol>
                     <IonCol class='ion-text-end'>

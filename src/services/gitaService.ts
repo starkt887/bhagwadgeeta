@@ -1,79 +1,82 @@
 import { addDoc, collection, deleteDoc, doc, getCountFromServer, getDoc, getDocs, orderBy, query, where } from "firebase/firestore";
 import { useEffect, useId, useState } from "react";
 import { firestoreDb } from "./firebaseService";
-import { IGitamodel, IShlokmodel } from "../models/geetamodel";
+import { IGitamodel, IShlokmodel, IUsableGitamodel, IUsableShlokmodel } from "../models/geetamodel";
 import { useAuthContext } from "../util/auth";
+import { useLanguageFormatter } from "../util/langFormatter";
 
 export function useGitaChapters() {
-    const [Chapters, setChapters] = useState<IGitamodel[]>()
-    const [ShlokOfDay, setShlokOfDay] = useState<IShlokmodel>()
-    async function getAllChapters() {
+    const { formatChaptersLang, formatShlokLang } = useLanguageFormatter()
+    const [Chapters, setChapters] = useState<IUsableGitamodel[]>()
+    const [ShlokOfDay, setShlokOfDay] = useState<IUsableShlokmodel>()
+    async function getAllChapters(lang: string) {
         try {
             const queryRef = query(collection(firestoreDb, 'gita'), orderBy('chapter_number'))
             const querySnapshot = await getDocs(queryRef);
-            const chapters = querySnapshot.docs.map((doc) => doc.data() as IGitamodel);
+            let preFormattedChapters = querySnapshot.docs.map((doc) => doc.data() as IGitamodel);
+            let chapters = formatChaptersLang(preFormattedChapters, lang)
             setChapters(chapters)
         } catch (error) {
             console.error(error);
         }
     }
-    async function shlokOfDay() {
+    async function getShlokOfDay(lang: string) {
         try {
             const gitaRef = query(collection(firestoreDb, 'gita'), orderBy('chapter_number'))
             const gitaSnapshot = await getCountFromServer(gitaRef);
             let randomChap = Math.round(Math.random() * gitaSnapshot.data().count)
-            console.log(randomChap)
+            // console.log(randomChap)
             const shlokRef = query(collection(firestoreDb, 'gita', `chapter${randomChap}`, 'shloks'))
             const shlokSnapshot = await getDocs(shlokRef);
             let randomShlok = Math.round(Math.random() * shlokSnapshot.docs.length)
-            console.log(shlokSnapshot.docs.at(randomShlok)?.data())
-            let shlokOfDay = shlokSnapshot.docs.at(randomShlok)?.data() as IShlokmodel
+            // console.log(shlokSnapshot.docs.at(randomShlok)?.data())
+            let preFormattedShlokOfDay = shlokSnapshot.docs.at(randomShlok)?.data() as IShlokmodel
+            let shlokOfDay = formatShlokLang(preFormattedShlokOfDay, lang)
             setShlokOfDay(shlokOfDay)
         } catch (error) {
             console.error(error);
         }
     }
-    useEffect(() => {
-        // console.log("Running Home effect")
-        getAllChapters();
-        shlokOfDay()
-    }, [])
-
-    return { Chapters, ShlokOfDay }
+    return { Chapters, ShlokOfDay, getAllChapters, getShlokOfDay }
 }
 
 export function useGitaGetSingleChapter() {
-    const [Chapter, setChapter] = useState<IGitamodel>()
-    const [Shloks, setShloks] = useState<IShlokmodel[]>()
-    async function getSingleChapter(chapter_number: number) {
+    const { formatChapterLang, formatShloksLang } = useLanguageFormatter()
+    const [Chapter, setChapter] = useState<IUsableGitamodel>()
+    const [Shloks, setShloks] = useState<IUsableShlokmodel[]>()
+
+    async function getSingleChapter(chapter_number: number, lang: string) {
         try {
             const queryRef = query(collection(firestoreDb, 'gita'), where("chapter_number", "==", chapter_number))
             const querySnapshot = await getDocs(queryRef);
-            const chapter = querySnapshot.docs.map((doc) => doc.data() as IGitamodel);
+            let preFormattedChapter = querySnapshot.docs.map((doc) => doc.data() as IGitamodel);
             //console.log(chapter)
-            setChapter(chapter.at(0))
+            let chapter = formatChapterLang(preFormattedChapter.at(0)!, lang)
+            setChapter(chapter)
         } catch (error) {
             console.error(error);
         }
     }
 
-    async function getAllChapters(chapter_number: number) {
+    async function getAllChapterSholks(chapter_number: number, lang: string) {
         try {
             const queryRef = query(collection(firestoreDb, 'gita', `chapter${chapter_number}`, 'shloks'), orderBy('id'))
             const querySnapshot = await getDocs(queryRef);
-            const shloks = querySnapshot.docs.map((doc) => ({ ...doc.data(), cloud_id: doc.id } as IShlokmodel));
+            const preFormattedShloks = querySnapshot.docs.map((doc) => ({ ...doc.data(), cloud_id: doc.id } as IShlokmodel));
             //console.log(shloks)
+            let shloks = formatShloksLang(preFormattedShloks, lang)
             setShloks(shloks)
         } catch (error) {
             console.error(error);
         }
     }
-    return { Chapter, Shloks, getSingleChapter, getAllChapters }
+    return { Chapter, Shloks, getSingleChapter, getAllChapterSholks }
 }
 
 export function useGitaShloksSingle() {
-    const [Shloks, setShloks] = useState<IShlokmodel[]>()
-    const [currentShlok, setCurrentShlok] = useState<IShlokmodel>()
+    const { formatShloksLang } = useLanguageFormatter()
+    const [Shloks, setShloks] = useState<IUsableShlokmodel[]>()
+    const [currentShlok, setCurrentShlok] = useState<IUsableShlokmodel>()
 
     const [totalShloks, setTotalShloks] = useState<number>()
     const [currentId, setCurrentId] = useState<number>()
@@ -109,24 +112,25 @@ export function useGitaShloksSingle() {
         }
     }
 
-    async function getAllShloksSetCurrent(chapter_number: number, id: number, userid: string)//as their are static number of sholks for lifetime so get all ane locally manage pagination
+    async function getAllShloksSetCurrent(chapter_number: number, id: number, userid: string, lang: string)//as their are static number of sholks for lifetime so get all ane locally manage pagination
     {
         try {
             const queryRef = query(collection(firestoreDb, 'gita', `chapter${chapter_number}`, 'shloks'), orderBy('id'))
             const querySnapshot = await getDocs(queryRef);
-            const shloks = querySnapshot.docs.map((doc) => ({ ...doc.data(), cloud_id: doc.id } as IShlokmodel));
+            let preFormattedShloks = querySnapshot.docs.map((doc) => ({ ...doc.data(), cloud_id: doc.id } as IShlokmodel));
+            let shloks = formatShloksLang(preFormattedShloks, lang)
             // console.log(shloks)
             setShloks(shloks)
             setTotalShloks(shloks.length)
             // console.log(chapter_number, id)
-            
+
             // console.log(shloks.find((shlok) => shlok.id == id))
 
             let currentId = 0;//default
             //here we are setting current shlok based on its internal id, but calculating its current array index position for array navigation
             setCurrentShlok(shloks.find((shlok) => {
                 if (shlok.id == id) {
-                    return shlok as IShlokmodel
+                    return shlok as IUsableShlokmodel
                 }
                 currentId++
             }))
@@ -171,10 +175,10 @@ export function useGitaShloksSingle() {
 }
 
 export function useGitaSaves() {
-    const [SavedShloks, setSavedShloks] = useState<IShlokmodel[]>([])
-    const [CurrentShlok, setCurrentShlok] = useState<IShlokmodel>()
+    const { formatShloksLang } = useLanguageFormatter()
+    const [SavedShloks, setSavedShloks] = useState<IUsableShlokmodel[]>([])
 
-    async function isShlokInFavorites(userid: string, shlok: IShlokmodel) {
+    async function isShlokInFavorites(userid: string, shlok: IUsableShlokmodel) {
         if (shlok && userid) {
             const q1 = query(collection(firestoreDb, 'users', userid, 'saved'),
                 where("chapter_number", '==', shlok.chapter_number),
@@ -189,7 +193,7 @@ export function useGitaSaves() {
         } return ''
     }
 
-    async function saveShlok(userid: string, shlok: IShlokmodel) {
+    async function saveShlok(userid: string, shlok: IUsableShlokmodel) {
 
         //check if the chapter number and shlok id is already there
         const favStat = await isShlokInFavorites(userid, shlok)
@@ -213,12 +217,12 @@ export function useGitaSaves() {
 
     }
 
-    async function getSavedShloks(userid: string) {
+    async function getSavedShloks(userid: string, lang: string) {
         const queryRef = query(collection(firestoreDb, 'users', userid, 'saved'))
         const queryDocs = (await getDocs(queryRef)).docs
-        let shloks: IShlokmodel[] = []
-        shloks = queryDocs.map((doc) => (doc.data() as IShlokmodel))
+        let preFormattedShloks = queryDocs.map((doc) => (doc.data() as IShlokmodel))
         // console.log(shloks)
+        let shloks = formatShloksLang(preFormattedShloks, lang)
         setSavedShloks(shloks)
     }
     return { SavedShloks, isShlokInFavorites, saveShlok, getSavedShloks }

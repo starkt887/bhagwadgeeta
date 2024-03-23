@@ -1,7 +1,7 @@
 import { IonFab, IonFabButton, IonIcon, IonLabel, IonRouterOutlet, IonTabBar, IonTabButton, IonTabs } from '@ionic/react'
 import { IonReactRouter } from '@ionic/react-router'
-import React, { useState } from 'react'
-import { Redirect, Route, Switch } from 'react-router'
+import React, { useEffect, useState } from 'react'
+import { Redirect, Route, Switch, useLocation } from 'react-router'
 import Home from '../pages/Home'
 import Saved from '../pages/Saved'
 import Settings from '../pages/Settings'
@@ -16,21 +16,28 @@ import Contact from '../pages/Contact'
 import About from '../pages/About'
 import Privacy from '../pages/Privacy'
 import Login from '../pages/Login'
-import { useAuthInit } from '../util/auth'
+import { useAuthContext, useAuthInit } from '../util/auth'
 import Disclaimer from '../pages/Disclaimer'
 
 
-interface props {
-    isloggedin: boolean
-}
-//{ isloggedin }: props
+
 const AppTabs = () => {
 
-    // if (!isloggedin) {
-    //     return <Redirect to='/login' />
-    // }
 
-    // if (true) {
+    const { isloggedin, userid } = useAuthContext()
+
+    const { pathname } = useLocation()
+
+
+
+    if (pathname.includes('saved') || pathname.includes('progress')) {
+        console.log('Checking route', pathname)
+        if (!isloggedin && !userid)
+            return <Redirect to='/login' />
+    }
+
+    // if (!isloggedin) {
+    //     console.log('Going to login')
     //     return <Redirect to='/login' />
     // }
 
@@ -46,18 +53,21 @@ const AppTabs = () => {
                 </Route>
                 <Route exact path="/home/chapter/:aid/shlok/:sid">
                     <SingleShlok />
-                   
+
                 </Route>
-                <Route exact path="/saved">
-                    <Saved />
-                </Route>
+
                 <Route exact path="/saved/chapter/:aid/shlok/:sid">
                     <SingleShlok />
-                   
+                </Route>
+
+                <Route exact path="/saved">
+                    <Saved />
                 </Route>
                 <Route exact path="/progress">
                     <Progress />
                 </Route>
+
+
                 <Route exact path="/settings">
                     <Settings />
                 </Route>
@@ -73,9 +83,10 @@ const AppTabs = () => {
                 <Route exact path="/disclaimer">
                     <Disclaimer />
                 </Route>
-                <Route exact path="/notifications">
+                {/* <Route exact path="/notifications">
                     <Notifications />
                 </Route>
+                 */}
                 <Route exact path="/">
                     <Redirect to={"/home"} />
                 </Route>
@@ -101,7 +112,7 @@ const AppTabs = () => {
                     <IonLabel>Settings</IonLabel>
                 </IonTabButton>
             </IonTabBar>
-           
+
         </IonTabs>
 
     )

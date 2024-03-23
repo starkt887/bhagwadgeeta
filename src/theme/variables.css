@@ -237,3 +237,6 @@ ion-thumbnail {
   
   --border-radius: 12px;
 }
+ion-button {
+  --border-radius: 6px;
+}

@@ -1,4 +1,3 @@
-import { geetamodel } from "./geetamodel";
 import { notificationModel } from "./notificationmodel";
 
 //https://www.bhagavad-gita.org/

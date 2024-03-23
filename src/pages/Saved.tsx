@@ -1,29 +1,35 @@
-import { IonContent, IonHeader, IonItem, IonLabel, IonList, IonListHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react'
-import React, { useEffect } from 'react'
+import { IonContent, IonHeader, IonItem, IonLabel, IonList, IonListHeader, IonLoading, IonPage, IonTitle, IonToolbar } from '@ionic/react'
+import React, { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import ListItem from '../components/ListItem'
 import { useGitaSaves } from '../services/gitaService'
 import { useAuthContext } from '../util/auth'
-import { IShlokmodel } from '../models/geetamodel'
+import { IShlokmodel, IUsableShlokmodel } from '../models/geetamodel'
 import { useLocation } from 'react-router'
 
 
 
 const Saved = () => {
 
-  const { isloggedin, userid } = useAuthContext()
+  const { isloggedin, userid, language } = useAuthContext()
   const { SavedShloks, getSavedShloks } = useGitaSaves()
 
   const { pathname } = useLocation()
+  const [loading, setLoading] = useState(false)
+
 
   useEffect(() => {
-    if (pathname !== '/saved')//a small trick to update saved whenever jumped on the saved url
+    if (pathname !== '/saved')//a small trick to dynamicall update saved list whenever jumped on the saved url
       return;
     console.log("Getting saved")
     console.log(pathname)
+    async function loadShloks() {
+      setLoading(true)
+      await getSavedShloks(userid!, language!)
+      setLoading(false)
+    }
     if (isloggedin && userid)
-      getSavedShloks(userid!)
-
+      loadShloks()
   }, [pathname])
 
 
@@ -33,6 +39,7 @@ const Saved = () => {
   return (
     <IonPage>
       <Header title='Saved' />
+      <IonLoading isOpen={loading} />
       <IonContent fullscreen className='ion-padding'>
         {/* list of all the shloks */}
         <IonList>
@@ -42,12 +49,12 @@ const Saved = () => {
             </IonLabel>
           </IonListHeader>
 
-          {SavedShloks && SavedShloks.map((data: IShlokmodel) => {
+          {SavedShloks && SavedShloks.map((data: IUsableShlokmodel) => {
             return <ListItem
               key={data.id}
               id={String(data.id)}
               title={`Shlok - ${data.id}`}
-              shortdescription={data.text_english}
+              shortdescription={data.text}
               path={`saved/chapter/${data.chapter_number}/shlok`}
             />
           })}

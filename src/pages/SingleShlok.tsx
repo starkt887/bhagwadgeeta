@@ -1,7 +1,7 @@
-import { IonContent, IonFab, IonFabButton, IonIcon, IonPage, IonText, } from '@ionic/react'
+import { IonContent, IonFab, IonFabButton, IonIcon, IonLoading, IonPage, IonText, } from '@ionic/react'
 import React, { useEffect, useState } from 'react'
 import Header from '../components/Header'
-import { useLocation, useParams } from 'react-router'
+import { useHistory, useLocation, useParams } from 'react-router'
 import { book as bookIcon, heart as heartIcon, arrowForward as arrowForwardIcon, arrowBack as arrowBackIcon } from "ionicons/icons"
 import { useGitaSaves, useGitaShloksSingle } from '../services/gitaService'
 import { useAuthContext } from '../util/auth'
@@ -14,17 +14,25 @@ interface useParameters {
 const SingleShlok = () => {
   const { aid, sid } = useParams<useParameters>();
   const { pathname } = useLocation();
-  const { isloggedin, userid } = useAuthContext()
+  const history = useHistory()
+
+  const { isloggedin, userid, language } = useAuthContext()
   const { currentShlok, getAllShloksSetCurrent, nextShlok, prevShlok } = useGitaShloksSingle();
   const { saveShlok, isShlokInFavorites } = useGitaSaves()
   const [isFavorite, setisFavorite] = useState<boolean>(false)
+  const [loading, setLoading] = useState(false)
 
- 
   let rendercount = 0//work around for strict modes twice rerender and can be removed at production
   useEffect(() => {
     // console.log(aid, sid)
+    // console.log(isloggedin, userid)
+    async function loadSingleShlok() {
+      setLoading(true)
+      await getAllShloksSetCurrent(Number(aid), Number(sid), userid!, language!)
+      setLoading(false)
+    }
     if (rendercount == 0)
-      getAllShloksSetCurrent(Number(aid), Number(sid), userid!)
+      loadSingleShlok()
     rendercount++;
   }, [])
 
@@ -34,14 +42,15 @@ const SingleShlok = () => {
 
   const verifyAndSave = async () => {
     console.log("Loggedin:", isloggedin, "Userid:", userid)
-    if (isloggedin && userid) {
-      await saveShlok(userid, currentShlok!)
-      favStatusChk()
+    if (!isloggedin && !userid) {
+      history.replace(`/login/home-chapter-${currentShlok?.chapter_number}-shlok-${currentShlok?.id}`)
+      return
     }
-    else {
-      //Pop up login page/popup/dialog need to decide
-    }
+    await saveShlok(userid!, currentShlok!)
+    favStatusChk()
   }
+
+
 
 
   const favStatusChk = async () => {
@@ -56,31 +65,29 @@ const SingleShlok = () => {
   return (
     <IonPage>
       <Header title='Shlok no' />
+      <IonLoading isOpen={loading} />
       <IonContent fullscreen className='ion-padding'>
         <IonText class='ion-text-center ion-justify-center'>
           <h4>Shlok: {currentShlok?.verse_number}</h4>
         </IonText>
         <div><hr style={{ color: '#d9d9d9', borderTop: "1px solid", marginBottom: "20px" }} /></div>
         <IonText class='ion-text-center'>
-          <h3>"{currentShlok?.text_english}"</h3>
+          <h3>"{currentShlok?.text}"</h3>
         </IonText>
         <div><hr style={{ color: '#d9d9d9', borderTop: "2px solid", marginBottom: "20px" }} /></div>
         <IonText class='ion-text-center'>
           <h4>Description</h4>
-          <p>{currentShlok?.description_english}</p>
+          <p>{currentShlok?.description}</p>
         </IonText>
 
-        <IonFab slot="fixed" vertical="top" horizontal="end">
-          <IonFabButton size='small' onClick={() => { console.log("adding to wishlist") }}>
-            <IonIcon icon={heartIcon}></IonIcon>
-          </IonFabButton>
-        </IonFab>
+
 
         <IonFab slot="fixed" vertical="top" horizontal="end">
           <IonFabButton size='small' onClick={verifyAndSave} color='secondary' >
             <IonIcon icon={heartIcon} color={isFavorite ? "danger" : "light"}></IonIcon>
           </IonFabButton>
         </IonFab>
+
         {!isOnSaved() ? <>
           <IonFab slot="fixed" vertical="bottom" horizontal="start">
             <IonFabButton size='small' color='tertiary' onClick={() => {
